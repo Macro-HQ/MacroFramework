@@ -1,0 +1,11 @@
+{
+  "compatibilityLevel": "JAVA_8",
+  "package": "dev.macrohq.macroframework.mixin",
+  "verbose": true,
+  "mixins": [
+    "NetworkManagerMixin"
+  ],
+  "client": [
+    "MinecraftInvoker"
+  ]
+}
