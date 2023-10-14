@@ -1,6 +1,8 @@
 package dev.macrohq.macroframework;
 
 import dev.macrohq.macroframework.command.CommandManager;
+import dev.macrohq.macroframework.gui.OpenCmd;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
@@ -24,10 +26,11 @@ public class MFLoader implements IFMLLoadingPlugin {
     }
 
     static {
+        Launch.blackboard.put("Tweakers", Launch.blackboard.get("TweakClasses"));
         MixinBootstrap.init();
-        Mixins.addConfigurations("mixins.macroframework.json", "mixins.oneconfig.json");
+        Mixins.addConfigurations("mixins.macroframework.json");
         MixinEnvironment.getDefaultEnvironment().setObfuscationContext("searge");
-        CommandManager.register(new TestCommand());
+        CommandManager.register(new OpenCmd());
     }
 
     @Override

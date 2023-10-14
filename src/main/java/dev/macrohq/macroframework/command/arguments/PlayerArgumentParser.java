@@ -15,9 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * The player argument parser. Returns a {@link GameProfile}.
- */
 public class PlayerArgumentParser extends ArgumentParser<GameProfile> {
     private static final HashMap<String, UUID> uuidCache = new HashMap<>();
     @Nullable
@@ -30,7 +27,6 @@ public class PlayerArgumentParser extends ArgumentParser<GameProfile> {
         return new GameProfile(getUUID(arg), arg);
     }
 
-    // checks mojang api for player uuid from name
     private static UUID getUUID(String name) {
         try {
             if (uuidCache.containsKey(name)) {

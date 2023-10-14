@@ -23,7 +23,8 @@ dependencies {
     compileOnly("org.spongepowered:mixin:0.8.5-SNAPSHOT")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
-    runtimeOnly("cc.polyfrost:oneconfig-1.8.9-forge:0.2.0-alpha180:full")
+    compileOnly("cc.polyfrost:oneconfig-1.8.9-forge:0.2.0-alpha180")
+    embed("cc.polyfrost:oneconfig-wrapper-launchwrapper:1.0.0-beta+")
 }
 
 loom {

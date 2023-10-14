@@ -1,34 +1,13 @@
-/*
- * This file is part of OneConfig.
- * OneConfig - Next Generation Config Library for Minecraft: Java Edition
- * Copyright (C) 2021~2023 Polyfrost and Pinkulu.
- *   <https://polyfrost.cc> <https://github.com/Polyfrost/>
- * Co-author: Pinkulu <pinkulumc@gmail.com> <https://github.com/pinkulu>
- *
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- *   OneConfig is licensed under the terms of version 3 of the GNU Lesser
- * General Public License as published by the Free Software Foundation, AND
- * under the Additional Terms Applicable to OneConfig, as published by Polyfrost,
- * either version 1.0 of the Additional Terms, or (at your option) any later
- * version.
- *
- *   This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- *   You should have received a copy of the GNU Lesser General Public
- * License.  If not, see <https://www.gnu.org/licenses/>. You should
- * have also received a copy of the Additional Terms Applicable
- * to OneConfig, as published by Polyfrost. If not, see
- * <https://polyfrost.cc/legal/oneconfig/additional-terms>
- */
-
 package dev.macrohq.macroframework.command;
 
 import dev.macrohq.macroframework.command.annotations.*;
 import dev.macrohq.macroframework.command.arguments.ArgumentParser;
+import dev.macrohq.macroframework.command.arguments.PlayerArgumentParser;
+import dev.macrohq.macroframework.util.Logger;
+import dev.macrohq.macroframework.util.StringUtil;
+import net.minecraft.command.CommandBase;
+import net.minecraft.util.BlockPos;
+import net.minecraftforge.client.ClientCommandHandler;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,24 +17,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Handles the registration of OneConfig commands.
- *
- * @see Command
- */
 public class CommandManager {
     public static final CommandManager INSTANCE = new CommandManager();
-    static final PlatformCommandManager platform = new PlatformCommandManager();
     static final String NOT_FOUND_TEXT = "Command not found! Type /@ROOT_COMMAND@ help for help.";
     static final String NOT_FOUND_HELP_TEXT = "Help for this command was not found! Type /@ROOT_COMMAND@ help for generic help first.";
     static final String METHOD_RUN_ERROR = "Error while running @ROOT_COMMAND@ method! Please report this to the developer.";
-    /**
-     * <a href="https://https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt">UTF-8 Stress Test</a> Character 2.3.1 (used because it's never going to be used in theory)
-     */
     static final String DELIMITER = "\uD7FF";
     final HashMap<Class<?>, ArgumentParser<?>> parsers = new HashMap<>();
     private final String[] EMPTY_ARRAY = new String[]{""};
-    // so that no one can name a method this
     static final String MAIN_METHOD_NAME = "MAIN" + DELIMITER + DELIMITER + "MAIN";
 
     private CommandManager() {
@@ -68,54 +37,25 @@ public class CommandManager {
         addParser(new ArgumentParser.FloatParser(), Float.TYPE);
         addParser(new ArgumentParser.BooleanParser());
         addParser(new ArgumentParser.BooleanParser(), Boolean.TYPE);
+        addParser(new PlayerArgumentParser());
     }
 
-    /**
-     * Adds a parser to the parsers map.
-     *
-     * @param parser The parser to add.
-     * @param cls    The class of the parser.
-     */
-    public void addParser(ArgumentParser<?> parser, Class<?> cls) {
-        parsers.put(cls, parser);
-    }
-
-    /**
-     * Adds a parser to the parsers map.
-     *
-     * @param parser The parser to add.
-     */
-    public void addParser(ArgumentParser<?> parser) {
-        addParser(parser, parser.typeClass);
-    }
-
-    /**
-     * Registers the provided command. <br>
-     * This method is fail-fast, meaning that it will throw Exceptions if the command is invalid upon startup.
-     *
-     * @param obj the command to register (must be an instance of a class annotated with @Command).
-     */
-    public void registerCommand(Object obj) {
-        platform.createCommand(new OCCommand(obj));
-    }
-
-    /**
-     * Shortcut for registering the provided command, if you are lazy. <br>
-     * This method is fail-fast, meaning that it will throw Exceptions if the command is invalid upon startup.
-     *
-     * @param obj the command to register (must be an instance of a class annotated with @Command).
-     */
     public static void register(Object obj) {
         INSTANCE.registerCommand(obj);
     }
 
-    /**
-     * Registers the provided command. <b>Deprecated!</b>
-     *
-     * @param cls the command to register as a class.
-     * @deprecated <b>Replace with {@link #registerCommand(Object)} aka. {@code new YourCommand()}</b>
-     */
-    @SuppressWarnings("DeprecatedIsStillUsed")
+    public void addParser(ArgumentParser<?> parser, Class<?> cls) {
+        parsers.put(cls, parser);
+    }
+
+    public void addParser(ArgumentParser<?> parser) {
+        addParser(parser, parser.typeClass);
+    }
+
+    public void registerCommand(Object obj) {
+        createCommand(new OCCommand(obj));
+    }
+
     @Deprecated
     public void registerCommand(Class<?> cls) {
         try {
@@ -127,9 +67,6 @@ public class CommandManager {
         }
     }
 
-    /**
-     * Turn an inner class into an Object instance.
-     */
     @NotNull
     private static Object createIsnOf(Class<?> cls, Object parent) {
         try {
@@ -147,9 +84,6 @@ public class CommandManager {
         }
     }
 
-    /**
-     * Take a command, go through all its parents, and for each add itself and its aliases
-     */
     @NotNull
     static String[] computePaths(@NotNull InternalCommand in) {
         List<String> out = new ArrayList<>();
@@ -175,10 +109,7 @@ public class CommandManager {
         return out.toArray(new String[0]);
     }
 
-    /**
-     * Internal class for command handling.
-     */
-    protected class OCCommand {
+    private class OCCommand {
         final Map<InternalCommand, String[]> commandsMap = new HashMap<>();
         final String[] helpCommand;
         private final Command meta;
@@ -207,20 +138,15 @@ public class CommandManager {
             }
         }
 
-        /**
-         * Turn a method into a InternalCommand and add it to the map.
-         */
         private void create(String[] parentPaths, @NotNull Object parent, @NotNull Method method) {
             if (parent.getClass().equals(Class.class)) return;
             if (!method.isAccessible()) method.setAccessible(true);
             if (!method.isAnnotationPresent(SubCommand.class)) {
                 if (method.isAnnotationPresent(Main.class)) {
                     if (mainMethod == null) {
-                        // If @Main *and* doesn't have any arguments, this is the main method
                         if (Arrays.equals(parentPaths, EMPTY_ARRAY) && method.getParameterCount() == 0) {
                             mainMethod = new InternalCommand(parent, method, parentPaths);
                         } else {
-                            // If there's only one main method, take it even if it has arguments
                             Method[] methods = method.getDeclaringClass().getDeclaredMethods();
                             int mains = (int) Stream.of(methods).filter(m -> m.isAnnotationPresent(Main.class)).count();
                             if (mains == 1) {
@@ -237,9 +163,6 @@ public class CommandManager {
             commandsMap.put(internalCommand, computePaths(internalCommand));
         }
 
-        /**
-         * Walk through the class and add all subclasses.
-         */
         private void walk(String[] paths, @NotNull Object self) {
             Class<?> classIn = self.getClass();
             paths = computePaths(paths, classIn);
@@ -297,7 +220,6 @@ public class CommandManager {
 
         String[] getAdvancedHelp(InternalCommand command) {
             if (command != null) {
-                // mm string builder looks great
                 StringBuilder sb = new StringBuilder(200);
                 sb.append(meta.chatColor()).append("§l").append("Advanced help for /").append(meta.value()).append(" ").append(command.getPrimaryPath().replaceAll(DELIMITER, " "));
                 sb.append("§r").append(meta.chatColor()).append(": ").append("\n").append(meta.chatColor());
@@ -343,20 +265,15 @@ public class CommandManager {
             this.meta = methodIn.isAnnotationPresent(SubCommand.class) ? methodIn.getAnnotation(SubCommand.class) : null;
             this.hasHelp = meta != null && !meta.description().isEmpty();
 
-            // generate aliases
             this.aliases = new String[meta != null ? meta.aliases().length + 1 : 1];
             if (meta != null) {
                 aliases[0] = methodIn.getName();
                 System.arraycopy(meta.aliases(), 0, aliases, 1, meta.aliases().length);
             } else {
-                aliases[0] =// methodIn.getParameterCount() == 0
-                        /*?*/ MAIN_METHOD_NAME
-                // : methodIn.getName() //+ DELIMITER + DELIMITER + methodIn.getName();
-                ;
+                aliases[0] = MAIN_METHOD_NAME;
             }
             this.paths = paths;
 
-            // check parameters
             int i = 0;
             for (Parameter parameter : method.getParameters()) {
                 if (!parsers.containsKey(parameter.getType())) {
@@ -374,7 +291,6 @@ public class CommandManager {
         @Nullable
         String invoke(String... argsIn) {
             try {
-                // main method
                 if (argsIn == null) {
                     method.invoke(parent);
                     return null;
@@ -396,7 +312,6 @@ public class CommandManager {
             for (Parameter parameter : parameters) {
                 try {
                     if (i == args.length - 1 && parameter.isAnnotationPresent(Greedy.class)) {
-                        // I love streams
                         args[i] = Arrays.stream(argsIn).skip(i).collect(Collectors.joining(" "));
                     } else {
                         args[i] = parsers.get(parameter.getType()).parse(argsIn[i]);
@@ -431,7 +346,6 @@ public class CommandManager {
 
         @Nullable
         String getHelp() {
-            // return new Therapist();
             if (hasHelp) {
                 return meta.description();
             } else {
@@ -460,9 +374,6 @@ public class CommandManager {
     }
 
 
-    /**
-     * A final Pair class to hold a command and its arguments.
-     */
     final static class Pair<K, V> {
         private final @NotNull K key;
         private final @NotNull V value;
@@ -492,5 +403,215 @@ public class CommandManager {
                     + "}";
         }
     }
-}
 
+    private static void createCommand(CommandManager.OCCommand root) {
+        ClientCommandHandler.instance.registerCommand(new CommandBase() {
+            @Override
+            public String getCommandName() {
+                return root.getMetadata().value();
+            }
+
+            @Override
+            public String getCommandUsage(net.minecraft.command.ICommandSender sender) {
+                return "/" + root.getMetadata().value();
+            }
+
+            @Override
+            public void processCommand(net.minecraft.command.ICommandSender sender, String[] args) {
+                try {
+                    String[] result = doCommand(args);
+                    if (result.length != 0 && result[0] != null) {
+                        for (String s : result) {
+                            Logger.log(s);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Logger.log(CommandManager.METHOD_RUN_ERROR.replace("@ROOT_COMMAND@", root.getMetadata().value()));
+                }
+            }
+
+            @Override
+            public List<String> getCommandAliases() {
+                return Arrays.asList(root.getMetadata().aliases());
+            }
+
+            @Override
+            public int getRequiredPermissionLevel() {
+                return -1;
+            }
+
+            @Override
+            public List<String>
+            addTabCompletionOptions(net.minecraft.command.ICommandSender sender, String[] args, BlockPos pos) {
+                List<String> opts = new ArrayList<>();
+                CommandManager.Pair<String[], CommandManager.InternalCommand> command = getCommand(args);
+                try {
+                    if (command != null) {
+                        Parameter currentParam = command.getValue().getUnderlyingMethod().getParameters()[command.getKey().length - 1];
+                        appendToOptions(opts, currentParam);
+                        opts.addAll(INSTANCE.parsers.get(currentParam.getType()).complete(args[args.length - 1], currentParam));
+                    }
+                    opts.addAll(getApplicableOptsFor(args));
+                } catch (Exception ignored) {
+                }
+
+                return opts.isEmpty() ? null : opts;
+            }
+
+            private String[] doCommand(@NotNull String[] args) {
+                if (args.length == 0) {
+                    if (root.mainMethod != null) return new String[]{root.mainMethod.invoke()};
+                    else return root.helpCommand;
+                } else if (args[0].equalsIgnoreCase("help")) {
+                    if (args.length == 1) {
+                        return root.helpCommand;
+                    } else {
+                        String[] newArgs = Arrays.copyOfRange(args, 1, args.length);
+                        CommandManager.Pair<String[], CommandManager.InternalCommand> command = getCommand(newArgs);
+                        return root.getAdvancedHelp(command == null ? null : command.getValue());
+                    }
+                } else {
+                    CommandManager.Pair<String[], CommandManager.InternalCommand> command = getCommand(args);
+                    if (command != null) {
+                        return new String[]{command.getValue().invoke(command.getKey())};
+                    }
+                }
+                return new String[]{root.getMetadata().chatColor() + NOT_FOUND_TEXT.replace("@ROOT_COMMAND@", root.getMetadata().value())};
+            }
+
+            @Nullable
+            private CommandManager.Pair<String[], CommandManager.InternalCommand> getCommand(String[] args) {
+                String argsIn = String.join(DELIMITER, args).toLowerCase();
+                for (int i = args.length - 1; i >= 0; i--) {
+                    CommandManager.InternalCommand command = get(root, argsIn);
+                    if (command != null) {
+                        String primaryPath = command.getPrimaryPath()
+                                .replace(DELIMITER + MAIN_METHOD_NAME, "")
+                                .replace(MAIN_METHOD_NAME, "");
+                        int skipArgs = 0;
+                        if (!primaryPath.isEmpty()) skipArgs++;
+                        for (char c : primaryPath.toCharArray()) {
+                            if (c == DELIMITER.toCharArray()[0]) skipArgs++;
+                        }
+                        String[] newArgs = new String[args.length - skipArgs];
+                        System.arraycopy(args, skipArgs, newArgs, 0, args.length - skipArgs);
+                        return new CommandManager.Pair<>(newArgs, command);
+                    }
+                    argsIn = StringUtil.substringToLastIndexOf(argsIn, DELIMITER);
+                }
+
+                return null;
+            }
+
+            private CommandManager.InternalCommand get(CommandManager.OCCommand command, String in) {
+                for (String[] ss : command.commandsMap.values()) {
+                    for (String s : ss) {
+                        if (s.equalsIgnoreCase(in) || s.equalsIgnoreCase(in + DELIMITER + MAIN_METHOD_NAME)) {
+                            return command.commandsMap.entrySet().stream()
+                                    .filter(it -> it.getValue() == ss)
+                                    .map(Map.Entry::getKey)
+                                    .findFirst()
+                                    .orElse(null);
+                        }
+                    }
+                }
+                String[] argsIn = in.toLowerCase().split(DELIMITER);
+                if (getApplicableOptsFor(argsIn).isEmpty()) {
+                    CommandManager.Pair<String, CommandManager.InternalCommand> fallbackCommand =
+                            getFallback(command, in);
+                    if (fallbackCommand != null) {
+                        return fallbackCommand.getValue();
+                    }
+                }
+                return null;
+            }
+
+            private Collection<String> getApplicableOptsFor(String[] args) {
+                final Set<String> opts = new HashSet<>();
+                final String current = String.join(DELIMITER, args);
+                root.commandsMap.values().forEach(paths -> {
+                    for (String p : paths) {
+                        if (p.endsWith(MAIN_METHOD_NAME)) continue;
+                        if (!p.startsWith(current)) continue;
+                        final String[] split = p.split(DELIMITER);
+                        if (args.length - 1 < split.length) {
+                            final String s = split[args.length - 1];
+                            if (s.isEmpty()) continue;
+                            opts.add(s);
+                        }
+                    }
+                });
+                opts.remove("main");
+                return opts;
+            }
+        });
+    }
+
+    private static void appendToOptions(List<String> opts, Parameter currentParam) {
+        Description description = currentParam.isAnnotationPresent(Description.class)
+                ? currentParam.getAnnotation(Description.class)
+                : null;
+        String[] targets = description != null && description.autoCompletesTo().length != 0 ? description.autoCompletesTo() : null;
+        if (targets != null) {
+            opts.addAll(Arrays.asList(targets));
+        }
+    }
+
+    private static CommandManager.Pair<String, CommandManager.InternalCommand> getFallback(CommandManager.OCCommand command, String in) {
+        in = in.trim();
+        if (in.isEmpty()) {
+            CommandManager.InternalCommand cmd = command.commandsMap.entrySet().stream()
+                    .filter(e -> Arrays.asList(e.getValue()).contains(MAIN_METHOD_NAME))
+                    .map(Map.Entry::getKey)
+                    .filter(it -> it.getUnderlyingMethod().getParameterCount() == 0)
+                    .findFirst()
+                    .orElse(null);
+            if (cmd == null) {
+                return null;
+            }
+            return new CommandManager.Pair<>(MAIN_METHOD_NAME, cmd);
+        }
+
+        String[] splitData = in.split(DELIMITER);
+        for (int i = splitData.length; i >= 0; i--) {
+            String[] split = Arrays.copyOfRange(splitData, 0, i);
+            String path = String.join(DELIMITER, split).trim();
+
+            List<InternalCommand> commands = getInternalCommands(command, path);
+            for (CommandManager.InternalCommand command1 : commands) {
+                Method method = command1.getUnderlyingMethod();
+
+                if (method.getParameterCount() == 0) {
+                    continue;
+                }
+                if (method.getParameterCount() == splitData.length) {
+                    return new CommandManager.Pair<>(path, command1);
+                } else if (method.getParameters()[method.getParameterCount() - 1].isAnnotationPresent(Greedy.class)) {
+                    return new CommandManager.Pair<>(path, command1);
+                }
+            }
+        }
+        return null;
+    }
+
+    @NotNull
+    private static List<InternalCommand> getInternalCommands(OCCommand command, String path) {
+        List<InternalCommand> commands = new ArrayList<>();
+        cmdfor:
+        for (Map.Entry<InternalCommand, String[]> entry : command.commandsMap.entrySet()) {
+            InternalCommand potentialCommand = entry.getKey();
+            String[] acceptedPaths = entry.getValue();
+            for (String cmdPath : acceptedPaths) {
+                boolean matchesPath = cmdPath.equals(path);
+                if (path.isEmpty()) matchesPath = false;
+                boolean matchesMain = cmdPath.equals(path + (path.isEmpty() ? "" : DELIMITER) + MAIN_METHOD_NAME.toLowerCase(Locale.ROOT));
+                if (matchesPath || matchesMain) {
+                    commands.add(potentialCommand);
+                    continue cmdfor;
+                }
+            }
+        }
+        return commands;
+    }
+}
