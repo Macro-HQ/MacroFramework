@@ -1,8 +1,11 @@
 {
   "compatibilityLevel": "JAVA_8",
   "package": "dev.macrohq.macroframework.mixin",
+  "refmap": "mixins.macroframework.refmap.json",
+  "minVersion": "0.7.11",
   "verbose": true,
   "mixins": [
+    "FMLHandshakeMessageMixin",
     "NetworkManagerMixin"
   ],
   "client": [

@@ -10,7 +10,11 @@ version = "1.0.0"
 
 repositories {
     maven("https://repo.spongepowered.org/repository/maven-public")
+    maven("https://repo.polyfrost.cc/releases")
 }
+
+val embed: Configuration by configurations.creating
+configurations.implementation.get().extendsFrom(embed)
 
 dependencies {
     minecraft("com.mojang:minecraft:1.8.9")
@@ -19,9 +23,23 @@ dependencies {
     compileOnly("org.spongepowered:mixin:0.8.5-SNAPSHOT")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
+    runtimeOnly("cc.polyfrost:oneconfig-1.8.9-forge:0.2.0-alpha180:full")
 }
 
 loom {
+    runConfigs {
+        named("client") {
+            ideConfigGenerated(true)
+        }
+    }
+
+    launchConfigs {
+        getByName("client") {
+            property("fml.coreMods.load", "dev.macrohq.macroframework.MFLoader")
+            property("devauth.enabled", "true")
+        }
+    }
+
     forge {
         pack200Provider.set(dev.architectury.pack200.java.Pack200Adapter())
         mixinConfig("mixins.macroframework.json")
@@ -31,7 +49,6 @@ loom {
 
 java {
     withSourcesJar()
-    withJavadocJar()
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
     toolchain.languageVersion = JavaLanguageVersion.of(8)
