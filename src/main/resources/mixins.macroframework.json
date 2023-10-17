@@ -6,7 +6,9 @@
   "verbose": true,
   "mixins": [
     "FMLHandshakeMessageMixin",
-    "NetworkManagerMixin"
+    "IWorldNameableMixin",
+    "NetworkManagerMixin",
+    "TileEntityChestMixin"
   ],
   "client": [
     "MinecraftInvoker"

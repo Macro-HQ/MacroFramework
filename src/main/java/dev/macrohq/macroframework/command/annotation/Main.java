@@ -1,4 +1,4 @@
-package dev.macrohq.macroframework.command.annotations;
+package dev.macrohq.macroframework.command.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,7 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface SubCommand {
+public @interface Main {
     String description() default "";
-    String[] aliases() default {};
 }

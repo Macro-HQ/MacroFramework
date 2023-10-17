@@ -1,4 +1,4 @@
-package dev.macrohq.macroframework.command.arguments;
+package dev.macrohq.macroframework.command.argument;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

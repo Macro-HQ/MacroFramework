@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "1.9.0"
     id("cc.polyfrost.loom") version "0.10.0.5"
     id("dev.architectury.architectury-pack200") version "0.1.3"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     id("maven-publish")
 }
 
@@ -25,6 +26,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
     compileOnly("cc.polyfrost:oneconfig-1.8.9-forge:0.2.0-alpha180")
     embed("cc.polyfrost:oneconfig-wrapper-launchwrapper:1.0.0-beta+")
+    embed("com.github.TomJuri:LegacyLWJGL:bb2c90c2f3")
 }
 
 loom {
@@ -37,6 +39,7 @@ loom {
     launchConfigs {
         getByName("client") {
             property("fml.coreMods.load", "dev.macrohq.macroframework.MFLoader")
+            arg("--tweakClass", "cc.polyfrost.oneconfig.loader.stage0.LaunchWrapperTweaker")
             property("devauth.enabled", "true")
         }
     }

@@ -1,8 +1,8 @@
 package dev.macrohq.macroframework.command;
 
-import dev.macrohq.macroframework.command.annotations.*;
-import dev.macrohq.macroframework.command.arguments.ArgumentParser;
-import dev.macrohq.macroframework.command.arguments.PlayerArgumentParser;
+import dev.macrohq.macroframework.command.annotation.*;
+import dev.macrohq.macroframework.command.argument.ArgumentParser;
+import dev.macrohq.macroframework.command.argument.PlayerArgumentParser;
 import dev.macrohq.macroframework.util.Logger;
 import dev.macrohq.macroframework.util.StringUtil;
 import net.minecraft.command.CommandBase;
