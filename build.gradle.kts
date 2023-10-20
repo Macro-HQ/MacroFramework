@@ -12,6 +12,7 @@ version = "1.0.0"
 repositories {
     maven("https://repo.spongepowered.org/repository/maven-public")
     maven("https://repo.polyfrost.cc/releases")
+    maven("https://maven.minecraftforge.net")
 }
 
 val embed: Configuration by configurations.creating
@@ -26,7 +27,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
     compileOnly("cc.polyfrost:oneconfig-1.8.9-forge:0.2.0-alpha180")
     embed("cc.polyfrost:oneconfig-wrapper-launchwrapper:1.0.0-beta+")
-    embed("com.github.TomJuri:LegacyLWJGL:bb2c90c2f3")
+    embed("com.github.TomJuri:LegacyLWJGL:8598356baf")
 }
 
 loom {

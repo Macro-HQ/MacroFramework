@@ -29,6 +29,7 @@ public class MFLoader implements IFMLLoadingPlugin {
 
     public MFLoader() {
         CommandManager.register(new OpenCmd());
+
         try {
             Field f_exceptions = LaunchClassLoader.class.getDeclaredField("classLoaderExceptions");
             f_exceptions.setAccessible(true);
